@@ -1,5 +1,5 @@
 ﻿SELECT 
-	user_id,
+	data.user_id,
 	username,
 	email,
 	publisher,
@@ -20,7 +20,8 @@
 	CASE 
 		WHEN COALESCE(currency, 'USD') = 'IDR' THEN ROUND((valid_to - '2015-11-01')::NUMERIC / (valid_to - valid_from)::NUMERIC * CASE WHEN amount IS NULL AND length < 150 THEN 2.99 WHEN amount IS NULL AND length < 300 THEN 5.99 WHEN amount IS NULL AND length >= 300 THEN 11.99 ELSE amount END, -3)
 		WHEN COALESCE(currency, 'USD') = 'USD' THEN ROUND((valid_to - '2015-11-01')::NUMERIC / (valid_to - valid_from)::NUMERIC * CASE WHEN amount IS NULL AND length < 150 THEN 2.99 WHEN amount IS NULL AND length < 300 THEN 5.99 WHEN amount IS NULL AND length >= 300 THEN 11.99 ELSE amount END, 2)
-	END AS remaining_value
+	END AS remaining_value,
+	tabloid_bola_valid_to
 FROM (
 SELECT
 	cas_users.id AS user_id,
@@ -44,4 +45,6 @@ WHERE 1=1
 	AND core_usersubscriptions.is_active = TRUE
 	AND valid_to > '2015-10-31 23:59:59'
 ) data
-ORDER BY amount NULLS FIRST
+LEFT JOIN (
+	SELECT user_id, valid_to AS tabloid_bola_valid_to FROM core_usersubscriptions WHERE brand_id = 5366 AND valid_to > '2015-10-31 23:59:59'
+	) tabloid_bola ON tabloid_bola.user_id = data.user_id

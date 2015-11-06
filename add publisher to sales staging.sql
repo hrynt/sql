@@ -17,7 +17,7 @@
 	COALESCE(core_orderlinediscounts.discount_group_id, '{0}') AS discount_group_id,
 	publisher_calculation.publisher_gross_share,
 	publisher_calculation.publisher_net_share,
-	(TO_DATE(core_payments.payment_period, 'YYYY-MM') + INTERVAL '1 month' - INTERVAL '1 day')::DATE AS sales_settlement_period
+	CASE WHEN LENGTH(core_payments.payment_period) = 7 THEN TO_CHAR((TO_DATE(core_payments.payment_period, 'YYYY-MM') + INTERVAL '1 month' - INTERVAL '1 day')::DATE, 'YYYYMMDD')::INT ELSE null END AS sales_settlement_period_key
 FROM 
 	core_payments
 	JOIN core_orderlines ON core_orderlines.order_id = core_payments.order_id
@@ -32,6 +32,3 @@ FROM
 	LEFT JOIN publisher_calculation ON publisher_calculation.orderline_id = core_orderlines.id
 WHERE
 	core_payments.id != 505474
-	AND core_payments.payment_period = '2015-10'
-ORDER BY 
-	publisher_calculation.publisher_net_share DESC
