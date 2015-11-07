@@ -1,0 +1,21 @@
+﻿
+--(user_id::TEXT || item_id::TEXT || user_buffet_id::TEXT || ARRAY_TO_STRING(pages, '0000') || TO_CHAR(datetime, 'YYYYMMDDHH24MISS') || EXTRACT(epoch FROM duration)::TEXT) AS unique_id 
+
+SELECT
+	id AS buffetpageview_id,
+	user_id,
+	item_id,
+	user_buffet_id,
+	UNNEST(pages) AS page_number,
+	datetime,
+	EXTRACT(epoch FROM duration)::NUMERIC/ARRAY_LENGTH(pages, 1) AS duration,
+	modified,
+	created
+FROM 
+	core_buffetpageviews 
+WHERE 1=1
+	AND duration <> '00:00:00'
+-- 	AND id > ? 
+ORDER BY 
+	id
+LIMIT 100
