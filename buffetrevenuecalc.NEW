@@ -1,0 +1,54 @@
+﻿WITH data AS (
+	SELECT 
+		core_buffetpageviews.unique_id,
+		core_orderlines.id AS orderline_id,
+		core_orderlines.publisher_net_share,
+		core_buffetpageviews.duration * (core_items.printed_price * idr.rate) AS duration_x_printedprice
+	FROM 
+		core_buffetpageviews_new core_buffetpageviews
+		JOIN core_userbuffets ON 
+			core_userbuffets.id = core_buffetpageviews.user_buffet_id 
+			AND core_buffetpageviews.datetime BETWEEN core_userbuffets.created AND core_userbuffets.valid_to
+		JOIN core_orderlines ON core_orderlines.order_id = core_userbuffets.orderline_id
+		JOIN core_payments ON core_payments.order_id = core_orderlines.order_id
+		JOIN core_items ON core_items.id = core_buffetpageviews.item_id
+		JOIN currency_rate idr ON 
+			idr.payment_period = '2015-09'--[sales_settlement_period]
+			AND idr.currency_from = core_items.printed_currency_code
+			AND idr.currency_to = 'IDR'
+	WHERE 1=1
+		AND core_payments.payment_status = 20003
+		AND core_payments.is_active = TRUE
+		AND core_payments.is_test_payment = FALSE
+		AND core_orderlines.is_active = TRUE
+		AND core_orderlines.is_free = FALSE
+)
+
+UPDATE core_buffetpageviews_new
+SET
+	duration_x_printedprice = calc.duration_x_printedprice,
+	duration_x_printedprice_total = calc.duration_x_printedprice_total,	
+	revenue_portion = calc.revenue_portion,
+	revenue = calc.revenue
+FROM 
+	(
+	SELECT
+		unique_id,
+		duration_x_printedprice,
+		duration_x_printedprice_total,
+		duration_x_printedprice / duration_x_printedprice_total AS revenue_portion,
+		publisher_net_share * (duration_x_printedprice / duration_x_printedprice_total) AS revenue
+	FROM
+		data
+		JOIN (
+			SELECT
+				orderline_id,
+				SUM(duration_x_printedprice) AS duration_x_printedprice_total
+			FROM 
+				data
+			GROUP BY
+				orderline_id
+			) duration_x_printedprice_total ON duration_x_printedprice_total.orderline_id = data.orderline_id
+	) calc
+WHERE 1=1
+	AND core_buffetpageviews_new.unique_id = calc.unique_id

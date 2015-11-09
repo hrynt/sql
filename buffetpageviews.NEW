@@ -1,21 +1,28 @@
-﻿
---(user_id::TEXT || item_id::TEXT || user_buffet_id::TEXT || ARRAY_TO_STRING(pages, '0000') || TO_CHAR(datetime, 'YYYYMMDDHH24MISS') || EXTRACT(epoch FROM duration)::TEXT) AS unique_id 
-
-SELECT
-	id AS buffetpageview_id,
+﻿SELECT
+	(user_id::TEXT || item_id::TEXT || user_buffet_id::TEXT || page_number::TEXT || TO_CHAR(datetime, 'YYYYMMDDHH24MISS') || REPLACE(duration::TEXT, '.', '')) AS unique_id,
+	buffetpageview_id,
 	user_id,
 	item_id,
 	user_buffet_id,
-	UNNEST(pages) AS page_number,
+	CASE WHEN page_number > 9999 OR page_number <= 0 THEN 1 ELSE page_number END AS page_number,
 	datetime,
-	EXTRACT(epoch FROM duration)::NUMERIC/ARRAY_LENGTH(pages, 1) AS duration,
+	CASE WHEN duration > 1800 THEN 1800 ELSE duration END AS duration,
 	modified,
 	created
-FROM 
-	core_buffetpageviews 
-WHERE 1=1
-	AND duration <> '00:00:00'
--- 	AND id > ? 
-ORDER BY 
-	id
-LIMIT 100
+FROM (
+	SELECT
+		id AS buffetpageview_id,
+		user_id,
+		item_id,
+		user_buffet_id,
+		UNNEST(pages) AS page_number,
+		datetime,
+		ROUND(EXTRACT(epoch FROM duration)::NUMERIC/ARRAY_LENGTH(pages, 1),2) AS duration,
+		modified,
+		created
+	FROM 
+		core_buffetpageviews 
+	WHERE 1=1
+		AND duration <> '00:00:00'
+		AND id > ? 
+) data
