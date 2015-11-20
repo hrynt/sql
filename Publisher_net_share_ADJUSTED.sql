@@ -1,4 +1,4 @@
-﻿
+
 select
         * -- STEP4
         ,case
