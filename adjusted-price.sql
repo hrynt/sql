@@ -75,3 +75,5 @@ SET
   adjusted_final_price = publisher_calculation.adjusted_final_price
 FROM publisher_calculation
 WHERE publisher_calculation.orderline_id = core_orderlines.id;
+
+
